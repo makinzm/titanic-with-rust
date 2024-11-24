@@ -1,0 +1,61 @@
+{
+  "lockfile_version": "1",
+  "packages": {
+    "cmake@latest": {
+      "last_modified": "2024-11-16T04:25:12Z",
+      "resolved": "github:NixOS/nixpkgs/34a626458d686f1b58139620a8b2793e9e123bba#cmake",
+      "source": "devbox-search",
+      "version": "3.30.5",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/aw70f6alsbf7cgn5qwqbpgd1w208i3v9-cmake-3.30.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/aw70f6alsbf7cgn5qwqbpgd1w208i3v9-cmake-3.30.5"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/71swssqfb007860ik9r7xgfb1i39dz7v-cmake-3.30.5",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/nlqn5rq3yx0qm0ibfn087bjxdb3y5vkn-cmake-3.30.5-debug"
+            }
+          ],
+          "store_path": "/nix/store/71swssqfb007860ik9r7xgfb1i39dz7v-cmake-3.30.5"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/6paqqjczjfv8z2i6qr7gdfq21n0rbglr-cmake-3.30.5",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/6paqqjczjfv8z2i6qr7gdfq21n0rbglr-cmake-3.30.5"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/4kb60dy0dg80ww8gh2av4by4vwn8l48k-cmake-3.30.5",
+              "default": true
+            },
+            {
+              "name": "debug",
+              "path": "/nix/store/f6wqljm9lncszmj652011lfjr5bpv6q1-cmake-3.30.5-debug"
+            }
+          ],
+          "store_path": "/nix/store/4kb60dy0dg80ww8gh2av4by4vwn8l48k-cmake-3.30.5"
+        }
+      }
+    }
+  }
+}
