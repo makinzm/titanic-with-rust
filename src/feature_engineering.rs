@@ -2,6 +2,7 @@ use anyhow::Result;
 use polars::prelude::*;
 use polars::datatypes::DataType;
 
+// Ref: [[polars] python-kaggle-start-book-ch02_05](https://www.kaggle.com/code/sishihara/polars-python-kaggle-start-book-ch02-05)
 pub fn process_features(input_path: &str, output_path: &str) -> Result<()> {
     // データフレームをCSVから読み込む
     let df = CsvReadOptions::default()
