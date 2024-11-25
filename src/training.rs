@@ -18,6 +18,21 @@ pub fn train_model(
         .with_has_header(true)
         .try_into_reader_with_file_path(Some(train_data_path.into()))?
         .finish()?;
+
+    // キャストする列のリスト
+    let columns_to_cast = vec!["Pclass", "Sex", "Age", "Fare", "Embarked", "FamilySize", "IsAlone", "Survived"];
+
+    // 各列を Float64 にキャスト
+    for col_name in &columns_to_cast {
+        df = df
+            .lazy()
+            .with_column(
+                col(*col_name)
+                .cast(DataType::Float64)
+            )
+            .collect()?;
+    }
+
     println!("Loaded data: {:?}", df.head(Some(5)));
 
     // 特徴量とラベルを分割
@@ -34,7 +49,15 @@ pub fn train_model(
                         .get(idx)
                         .unwrap()
                         .try_extract::<f64>()
-                        .unwrap_or(0.0)
+                        .unwrap_or_else(|_| {
+                            // もし f64 に変換できない場合、i64 として取得して f64 に変換
+                            df.column(col)
+                                .unwrap()
+                                .get(idx)
+                                .unwrap()
+                                .try_extract::<i64>()
+                                .unwrap_or(0) as f64
+                        })
                 })
                 .collect::<Vec<f64>>()
                 .try_into()
