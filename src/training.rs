@@ -10,6 +10,40 @@ use rand::seq::SliceRandom;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
+pub fn convert_df_to_vec(
+    df: &DataFrame,
+) -> Vec<[f64; 7]> {
+
+    let features: Vec<&str> = vec!["Pclass", "Sex", "Age", "Fare", "Embarked", "FamilySize", "IsAlone"];
+
+    let feature_data: Vec<[f64; 7]> = (0..df.height())
+        .map(|idx| {
+            features
+                .iter()
+                .map(|&col| {
+                    df.column(col)
+                        .unwrap()
+                        .get(idx)
+                        .unwrap()
+                        .try_extract::<f64>()
+                        .unwrap_or_else(|_| {
+                            // もし f64 に変換できない場合、i64 として取得して f64 に変換
+                            df.column(col)
+                                .unwrap()
+                                .get(idx)
+                                .unwrap()
+                                .try_extract::<i64>()
+                                .unwrap_or(0) as f64
+                        })
+                })
+                .collect::<Vec<f64>>()
+                .try_into()
+                .expect("Row length mismatch")
+        })
+        .collect();
+    return feature_data;
+}
+
 #[macro_export]
 macro_rules! train_model {
     ($train_data_path:expr, $output_model_path:expr, $oof_predictions_path:expr, $seed:expr) => {
@@ -49,35 +83,8 @@ pub fn train_model(
     println!("Loaded data: {:?}", df.head(Some(5)));
 
     // 特徴量とラベルを分割
-    let features: Vec<&str> = vec!["Pclass", "Sex", "Age", "Fare", "Embarked", "FamilySize", "IsAlone"];
     let label_col = "Survived";
-
-    let feature_data: Vec<[f64; 7]> = (0..df.height())
-        .map(|idx| {
-            features
-                .iter()
-                .map(|&col| {
-                    df.column(col)
-                        .unwrap()
-                        .get(idx)
-                        .unwrap()
-                        .try_extract::<f64>()
-                        .unwrap_or_else(|_| {
-                            // もし f64 に変換できない場合、i64 として取得して f64 に変換
-                            df.column(col)
-                                .unwrap()
-                                .get(idx)
-                                .unwrap()
-                                .try_extract::<i64>()
-                                .unwrap_or(0) as f64
-                        })
-                })
-                .collect::<Vec<f64>>()
-                .try_into()
-                .expect("Row length mismatch")
-        })
-        .collect();
-
+    let feature_data = convert_df_to_vec(&df);
     let data_matrix = MatBuf::from_rows(feature_data);
 
     let labels = df
