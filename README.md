@@ -1,5 +1,6 @@
 # titanic-with-rust
 
+Before that, you should prepare LightGBM settings : [link](#LightGBM-Settings)
 
 ```shell
 export LIGHTGBM_LIB_DIR=$(pwd)/LightGBM
@@ -13,9 +14,10 @@ cargo run main
 Submit `intermediate/submission.csv` to [Titanic - Machine Learning from Disaster | Kaggle](https://www.kaggle.com/competitions/titanic/submissions)
 
 (score: 0.72966)
+
 ---
 
-# LightGBM Settings
+# LightGBM-Settings
 [lgbm - crates.io: Rust Package Registry](https://crates.io/crates/lgbm)
 
 ```shell
