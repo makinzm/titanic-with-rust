@@ -1,6 +1,8 @@
 # titanic-with-rust
 
-Before that, you should prepare LightGBM settings : [link](#LightGBM-Settings)
+## How to run from traing to submission
+
+Before that, you should prepare LightGBM settings : [link](##LightGBM-Settings)
 
 ```shell
 export LIGHTGBM_LIB_DIR=$(pwd)/LightGBM
@@ -17,7 +19,7 @@ Submit `intermediate/submission.csv` to [Titanic - Machine Learning from Disaste
 
 ---
 
-# LightGBM-Settings
+## LightGBM-Settings
 
 [lgbm - crates.io: Rust Package Registry](https://crates.io/crates/lgbm)
 
