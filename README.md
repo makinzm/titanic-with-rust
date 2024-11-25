@@ -3,6 +3,7 @@
 
 ```shell
 export LIGHTGBM_LIB_DIR=$(pwd)/LightGBM
+export LD_LIBRARY_PATH=$(pwd)/LightGBM:$LD_LIBRARY_PATH
 ```
 
 ```shell
