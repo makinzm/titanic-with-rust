@@ -135,12 +135,12 @@ pub fn train_model(
         )?;
         train_dataset.set_field(Field::LABEL, &train_labels)?;
 
-        let mut valid_dataset = Dataset::from_mat(
-            &MatBuf::from_rows(valid_features.clone()),
-            None,
-            &Parameters::new(),
-        )?;
-        valid_dataset.set_field(Field::LABEL, &valid_labels)?;
+        // let mut valid_dataset = Dataset::from_mat(
+        //     &MatBuf::from_rows(valid_features.clone()),
+        //     None,
+        //     &Parameters::new(),
+        // )?;
+        // valid_dataset.set_field(Field::LABEL, &valid_labels)?;
 
         // LightGBM パラメータ設定
         let mut params = Parameters::new();
@@ -150,7 +150,7 @@ pub fn train_model(
 
         // モデルの作成とトレーニング
         let mut booster = Booster::new(Arc::new(train_dataset), &params)?;
-        booster.add_valid_data(Arc::new(valid_dataset))?;
+        // booster.add_valid_data(Arc::new(valid_dataset))?;
         for _ in 0..100 {
             if booster.update_one_iter()? {
                 break;
