@@ -3059,6 +3059,7 @@ dependencies = [
  "lgbm",
  "polars",
  "rand",
+ "rand_core",
  "serde",
 ]
 

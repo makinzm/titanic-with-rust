@@ -4,6 +4,7 @@ mod inference;
 mod create_submission;
 
 use anyhow::Result;
+use training::train_model;
 
 fn pipeline(
     train_csv: &str,
@@ -15,7 +16,7 @@ fn pipeline(
 ) -> Result<()> {
     // 各ステップの実行
     feature_engineering::process_features(train_csv, train_features_csv)?;
-    training::train_model(train_features_csv, model_path, oof_predictions_csv)?;
+    train_model!(train_features_csv, model_path, oof_predictions_csv)?;
     inference::run_inference(model_path, inference_features_csv, submission_csv)?;
     create_submission::create_submission(submission_csv, "submission.csv")?;
     Ok(())

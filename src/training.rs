@@ -7,11 +7,24 @@ use polars::series::Series;
 use polars::prelude::*;
 use std::sync::Arc;
 use rand::seq::SliceRandom;
+use rand::rngs::SmallRng;
+use rand::SeedableRng;
+
+#[macro_export]
+macro_rules! train_model {
+    ($train_data_path:expr, $output_model_path:expr, $oof_predictions_path:expr, $seed:expr) => {
+        train_model($train_data_path, $output_model_path, $oof_predictions_path, $seed)
+    };
+    ($train_data_path:expr, $output_model_path:expr, $oof_predictions_path:expr) => {
+        train_model($train_data_path, $output_model_path, $oof_predictions_path, None)
+    };
+}
 
 pub fn train_model(
     train_data_path: &str,
     output_model_path: &str,
     oof_predictions_path: &str,
+    seed: Option<u64>,
 ) -> Result<()> {
     // データの読み込み
     let mut df = CsvReadOptions::default()
@@ -77,7 +90,9 @@ pub fn train_model(
     // 5分割交差検証
     let k = 5;
     let mut indices: Vec<usize> = (0..labels.len()).collect();
-    indices.shuffle(&mut rand::thread_rng()); // データをシャッフル
+
+    let seed_value = seed.unwrap_or(42);
+    indices.shuffle(&mut SmallRng::seed_from_u64(seed_value));
     let fold_size = labels.len() / k;
 
     let mut oof_predictions = vec![0.0; labels.len()];
