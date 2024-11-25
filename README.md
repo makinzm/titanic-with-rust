@@ -2,7 +2,7 @@
 
 ## How to run from traing to submission
 
-Before that, you should prepare LightGBM settings : [link](##LightGBM-Settings)
+Before that, you should prepare LightGBM settings : [link](#LightGBM-Settings)
 
 ```shell
 export LIGHTGBM_LIB_DIR=$(pwd)/LightGBM
