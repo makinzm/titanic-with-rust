@@ -81,6 +81,7 @@ pub fn train_model(
     let fold_size = labels.len() / k;
 
     let mut oof_predictions = vec![0.0; labels.len()];
+    let mut accuracies = vec![];
     for fold in 0..k {
         println!("Training fold {}/{}", fold + 1, k);
 
@@ -169,7 +170,38 @@ pub fn train_model(
         for (i, &pred) in valid_idx.iter().zip(valid_predictions.values().iter()) {
             oof_predictions[*i] = pred;
         }
+
+        // Calculate accuracy
+        let correct = valid_predictions
+            .values()
+            .iter()
+            .zip(valid_labels.iter())
+            .filter(|(&pred, &label)| {
+                if pred > 0.5 {
+                    label > 0.5
+                } else {
+                    label < 0.5
+                }
+            })
+            .count();
+        let accuracy = correct as f32 / valid_labels.len() as f32;
+        println!("Fold {} accuracy: {:.2}%", fold, accuracy * 100.0);
+
+        accuracies.push(accuracy);
+        // Save model
+        let output_model_path = output_model_path.replace(".bin", &format!("_fold{}.bin", fold));
+        booster.save_model(
+            fold,
+            None,
+            lgbm::FeatureImportanceType::Split,
+            std::path::Path::new(&format!("{}", output_model_path)),
+        )?;
     }
+
+    // Calculate overall accuracy
+    let overall_accuracy = accuracies.iter().sum::<f32>() / accuracies.len() as f32;
+    println!("Overall accuracy: {:.2}%", overall_accuracy * 100.0);
+
     // OOF予測の保存
     let oof_series = Series::new("OOF_Predictions".into(), oof_predictions);
     let mut oof_df = DataFrame::new(vec![polars::prelude::Column::Series(oof_series)])?;
@@ -178,16 +210,6 @@ pub fn train_model(
         .finish(&mut oof_df)?;
 
     println!("Training complete. Saving model to {}", output_model_path);
-
-    // モデルの保存
-    let final_booster = Booster::new(Arc::new(Dataset::from_mat(&data_matrix, None, &Parameters::new())?), &Parameters::new())?;
-
-    final_booster.save_model(
-        0,
-        None,
-        lgbm::FeatureImportanceType::Split,
-        std::path::Path::new(output_model_path),
-    )?;
 
     Ok(())
 }
