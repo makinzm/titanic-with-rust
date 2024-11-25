@@ -16,7 +16,7 @@ pub fn convert_df_to_vec(
 
     let features: Vec<&str> = vec!["Pclass", "Sex", "Age", "Fare", "Embarked", "FamilySize", "IsAlone"];
 
-    let feature_data: Vec<[f64; 7]> = (0..df.height())
+    (0..df.height())
         .map(|idx| {
             features
                 .iter()
@@ -40,8 +40,7 @@ pub fn convert_df_to_vec(
                 .try_into()
                 .expect("Row length mismatch")
         })
-        .collect();
-    return feature_data;
+        .collect()
 }
 
 #[macro_export]
