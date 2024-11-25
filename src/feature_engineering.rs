@@ -1,6 +1,5 @@
 use anyhow::Result;
 use polars::prelude::*;
-use polars::lazy::dsl::*;
 use polars::datatypes::DataType;
 
 pub fn process_features(input_path: &str, output_path: &str) -> Result<()> {
