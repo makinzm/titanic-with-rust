@@ -10,6 +10,8 @@ export LD_LIBRARY_PATH=$(pwd)/LightGBM:$LD_LIBRARY_PATH
 cargo run main
 ```
 
+Submit `intermediate/submission.csv` to [Titanic - Machine Learning from Disaster | Kaggle](https://www.kaggle.com/competitions/titanic/submissions)
+
 ---
 
 # LightGBM Settings
