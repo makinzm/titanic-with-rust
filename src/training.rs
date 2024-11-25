@@ -186,7 +186,7 @@ pub fn train_model(
             lgbm::PredictType::Normal,
             0,
             None,
-            &params,
+            &Parameters::default(),
         )?;
 
         for (i, &pred) in valid_idx.iter().zip(valid_predictions.values().iter()) {
