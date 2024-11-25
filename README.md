@@ -12,6 +12,7 @@ cargo run main
 
 Submit `intermediate/submission.csv` to [Titanic - Machine Learning from Disaster | Kaggle](https://www.kaggle.com/competitions/titanic/submissions)
 
+(score: 0.72966)
 ---
 
 # LightGBM Settings
