@@ -27,13 +27,8 @@ pub fn convert_df_to_vec(
                         .unwrap()
                         .try_extract::<f64>()
                         .unwrap_or_else(|_| {
-                            // もし f64 に変換できない場合、i64 として取得して f64 に変換
-                            df.column(col)
-                                .unwrap()
-                                .get(idx)
-                                .unwrap()
-                                .try_extract::<i64>()
-                                .unwrap_or(0) as f64
+                            // もし f64 に変換できない場合は panic
+                            panic!("Failed to convert value to f64")
                         })
                 })
                 .collect::<Vec<f64>>()
