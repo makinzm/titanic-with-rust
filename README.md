@@ -18,6 +18,7 @@ Submit `intermediate/submission.csv` to [Titanic - Machine Learning from Disaste
 ---
 
 # LightGBM-Settings
+
 [lgbm - crates.io: Rust Package Registry](https://crates.io/crates/lgbm)
 
 ```shell
@@ -30,4 +31,9 @@ git submodule update --init --recursive
     1. [devbox global add | Jetify Docs](https://www.jetify.com/docs/devbox/cli_reference/devbox_global_add/)
     1. [cmake | How to install with Nix or Devbox](https://www.nixhub.io/packages/cmake?utm_source=chatgpt.com)
 2. Install lgbm
+
+# Reference
+
+I created feature-engineering code based on the following code.
+- u++, [[polars] python-kaggle-start-book-ch02_05](https://www.kaggle.com/code/sishihara/polars-python-kaggle-start-book-ch02-05)
 
