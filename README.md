@@ -1,5 +1,14 @@
 # titanic-with-rust
 
+
+```shell
+export LIGHTGBM_LIB_DIR=$(pwd)/LightGBM
+```
+
+```shell
+cargo run main
+```
+
 ---
 
 # LightGBM Settings
@@ -15,8 +24,4 @@ git submodule update --init --recursive
   1. [devbox global add | Jetify Docs](https://www.jetify.com/docs/devbox/cli_reference/devbox_global_add/)
   1. [cmake | How to install with Nix or Devbox](https://www.nixhub.io/packages/cmake?utm_source=chatgpt.com)
 2. Install lgbm
-
-```shell
-export LIGHTGBM_LIB_DIR=$(pwd)/LightGBM
-```
 
