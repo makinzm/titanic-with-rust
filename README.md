@@ -1,6 +1,6 @@
 # titanic-with-rust
 
-## How to run from traing to submission
+## How to run from training to submission
 
 Before that, you should prepare LightGBM settings : [link](#LightGBM-Settings)
 
