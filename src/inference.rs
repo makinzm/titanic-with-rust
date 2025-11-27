@@ -153,7 +153,7 @@ pub fn run_inference(model_path: &str, input_data_path: &str, output_data_path: 
     let survival_rate = binary_predictions.iter().map(|&x| x as f64).sum::<f64>() / binary_predictions.len() as f64;
     
     println!("Inference completed successfully!");
-    println!("  Processed {} passengers", passenger_ids.len());
+    // println!("  Processed {} passengers", passenger_ids.len());
     println!("  Predicted survival rate: {:.2}%", survival_rate * 100.0);
     println!("  Raw predictions saved to: {}", predictions_raw_path);
     println!("  Final submission saved to: {}", output_data_path);
