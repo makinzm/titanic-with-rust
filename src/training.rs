@@ -10,32 +10,38 @@ use rand::seq::SliceRandom;
 use rand::rngs::SmallRng;
 use rand::SeedableRng;
 
-pub fn convert_df_to_vec(
-    df: &DataFrame,
-) -> Vec<[f64; 7]> {
+// コンパイル時に特徴量数を確定し、パフォーマンスを向上
+const FEATURE_COUNT: usize = 7;
+const FEATURE_NAMES: [&str; FEATURE_COUNT] = ["Pclass", "Sex", "Age", "Fare", "Embarked", "FamilySize", "IsAlone"];
 
-    let features: Vec<&str> = vec!["Pclass", "Sex", "Age", "Fare", "Embarked", "FamilySize", "IsAlone"];
-
-    (0..df.height())
-        .map(|idx| {
-            features
-                .iter()
-                .map(|&col| {
-                    df.column(col)
-                        .unwrap()
-                        .get(idx)
-                        .unwrap()
-                        .try_extract::<f64>()
-                        .unwrap_or_else(|_| {
-                            // もし f64 に変換できない場合は panic
-                            panic!("Failed to convert value to f64")
-                        })
-                })
-                .collect::<Vec<f64>>()
-                .try_into()
-                .expect("Row length mismatch")
+pub fn convert_df_to_vec(df: &DataFrame) -> Result<Vec<[f64; FEATURE_COUNT]>> {
+    // 事前に列を取得してキャッシュ（パフォーマンス向上）
+    let columns: Result<Vec<_>> = FEATURE_NAMES
+        .iter()
+        .map(|&name| {
+            df.column(name)
+                .map_err(|e| anyhow::anyhow!("Column '{}' not found: {}", name, e))
         })
-        .collect()
+        .collect();
+    let columns = columns?;
+    
+    // メモリを事前に確保（パフォーマンス向上）
+    let mut result = Vec::with_capacity(df.height());
+    
+    for idx in 0..df.height() {
+        let mut row = [0.0f64; FEATURE_COUNT];
+        for (col_idx, column) in columns.iter().enumerate() {
+            let value = column
+                .get(idx)
+                .map_err(|e| anyhow::anyhow!("Failed to get value at index {}: {}", idx, e))?
+                .try_extract::<f64>()
+                .map_err(|e| anyhow::anyhow!("Failed to convert value to f64 at column '{}', row {}: {}", FEATURE_NAMES[col_idx], idx, e))?;
+            row[col_idx] = value;
+        }
+        result.push(row);
+    }
+    
+    Ok(result)
 }
 
 #[macro_export]
@@ -54,39 +60,45 @@ pub fn train_model(
     oof_predictions_path: &str,
     seed: Option<u64>,
 ) -> Result<()> {
-    // データの読み込み
-    let mut df = CsvReadOptions::default()
-        .with_has_header(true)
-        .try_into_reader_with_file_path(Some(train_data_path.into()))?
-        .finish()?;
+    // LazyFrameで直接読み込み、一度にすべての列をFloat64にキャスト（パフォーマンス向上）
+    let df = LazyFrame::scan_csv(
+        std::path::Path::new(train_data_path),
+        ScanArgsCSV {
+            has_header: true,
+            ..Default::default()
+        },
+    )?
+    .with_columns([
+        col("Pclass").cast(DataType::Float64),
+        col("Sex").cast(DataType::Float64),
+        col("Age").cast(DataType::Float64),
+        col("Fare").cast(DataType::Float64),
+        col("Embarked").cast(DataType::Float64),
+        col("FamilySize").cast(DataType::Float64),
+        col("IsAlone").cast(DataType::Float64),
+        col("Survived").cast(DataType::Float64),
+    ])
+    .collect()?;
 
-    // キャストする列のリスト
-    let columns_to_cast = vec!["Pclass", "Sex", "Age", "Fare", "Embarked", "FamilySize", "IsAlone", "Survived"];
-
-    // 各列を Float64 にキャスト
-    for col_name in &columns_to_cast {
-        df = df
-            .lazy()
-            .with_column(
-                col(*col_name)
-                .cast(DataType::Float64)
-            )
-            .collect()?;
-    }
-
+    #[cfg(debug_assertions)]
     println!("Loaded data: {:?}", df.head(Some(5)));
 
     // 特徴量とラベルを分割
     let label_col = "Survived";
-    let feature_data = convert_df_to_vec(&df);
+    let feature_data = convert_df_to_vec(&df)?;
     let data_matrix = MatBuf::from_rows(feature_data);
 
-    let labels = df
+    let labels: Result<Vec<f32>> = df
         .column(label_col)?
         .f64()?
         .into_iter()
-        .map(|v| v.unwrap() as f32)
-        .collect::<Vec<_>>();
+        .enumerate()
+        .map(|(idx, v)| {
+            v.ok_or_else(|| anyhow::anyhow!("Null value found in label column at index {}", idx))
+                .map(|v| v as f32)
+        })
+        .collect();
+    let labels = labels?;
 
     // 5分割交差検証
     let k = 5;
@@ -112,37 +124,32 @@ pub fn train_model(
             .copied()
             .collect::<Vec<_>>();
 
-        let train_features: Vec<[f64; 7]> = train_idx
-            .iter()
-            .map(|&idx| {
+        // メモリを事前に確保してパフォーマンス向上
+        let mut train_features = Vec::with_capacity(train_idx.len());
+        let mut train_labels = Vec::with_capacity(train_idx.len());
+        
+        for &idx in &train_idx {
+            train_features.push(
                 data_matrix
                     .row(idx)
                     .try_into()
                     .expect("Row length mismatch")
-            })
-            .collect();
+            );
+            train_labels.push(labels[idx]);
+        }
 
-
-        let train_labels: Vec<f32> = train_idx
-            .iter()
-            .map(|&idx| labels[idx])
-            .collect::<Vec<_>>();
-
-
-        let valid_features: Vec<[f64; 7]> = valid_idx
-            .iter()
-            .map(|&idx| {
+        let mut valid_features = Vec::with_capacity(valid_idx.len());
+        let mut valid_labels = Vec::with_capacity(valid_idx.len());
+        
+        for &idx in &valid_idx {
+            valid_features.push(
                 data_matrix
                     .row(idx)
                     .try_into()
                     .expect("Row length mismatch")
-            })
-            .collect();
-
-        let valid_labels: Vec<f32> = valid_idx
-            .iter()
-            .map(|&idx| labels[idx])
-            .collect::<Vec<_>>();
+            );
+            valid_labels.push(labels[idx]);
+        }
 
         // LightGBM データセットの作成
         let mut train_dataset = Dataset::from_mat(
@@ -187,46 +194,65 @@ pub fn train_model(
             oof_predictions[*i] = pred;
         }
 
-        // Calculate accuracy
+        // 精度計算を最適化（イテレータを使用）
         let correct = valid_predictions
             .values()
             .iter()
             .zip(valid_labels.iter())
-            .filter(|(&pred, &label)| {
-                if pred > 0.5 {
-                    label > 0.5
-                } else {
-                    label < 0.5
-                }
-            })
+            .filter(|(&pred, &label)| (pred > 0.5) == (label > 0.5))
             .count();
         let accuracy = correct as f32 / valid_labels.len() as f32;
-        println!("Fold {} accuracy: {:.2}%", fold, accuracy * 100.0);
+        println!("Fold {}/{} - Accuracy: {:.4} ({:.2}%)", 
+                 fold + 1, k, accuracy, accuracy * 100.0);
 
         accuracies.push(accuracy);
-        // Save model
-        let output_model_path = output_model_path.replace(".bin", &format!("_fold{}.bin", fold));
+        
+        // モデル保存のエラーハンドリング改善
+        let fold_model_path = output_model_path.replace(".bin", &format!("_fold{}.bin", fold));
         booster.save_model(
             fold,
             None,
             lgbm::FeatureImportanceType::Split,
-            std::path::Path::new(&format!("{}", output_model_path)),
-        )?;
+            std::path::Path::new(&fold_model_path),
+        )
+        .map_err(|e| anyhow::anyhow!("Failed to save model for fold {}: {}", fold, e))?;
     }
 
-    // Calculate overall accuracy
+    // 全体精度計算と結果表示を最適化
+    if accuracies.is_empty() {
+        return Err(anyhow::anyhow!("No accuracies calculated - training failed"));
+    }
+    
     let overall_accuracy = accuracies.iter().sum::<f32>() / accuracies.len() as f32;
-    println!("Overall accuracy: {:.2}%", overall_accuracy * 100.0);
+    let min_accuracy = accuracies.iter().fold(f32::INFINITY, |a, &b| a.min(b));
+    let max_accuracy = accuracies.iter().fold(f32::NEG_INFINITY, |a, &b| a.max(b));
+    
+    println!("\n=== Training Results ===");
+    println!("Overall CV Accuracy: {:.4} ({:.2}%)", overall_accuracy, overall_accuracy * 100.0);
+    println!("Min Fold Accuracy: {:.4} ({:.2}%)", min_accuracy, min_accuracy * 100.0);
+    println!("Max Fold Accuracy: {:.4} ({:.2}%)", max_accuracy, max_accuracy * 100.0);
+    println!("Std Dev: {:.4}", {
+        let mean = overall_accuracy;
+        let variance = accuracies.iter().map(|&x| (x - mean).powi(2)).sum::<f32>() / accuracies.len() as f32;
+        variance.sqrt()
+    });
 
-    // OOF予測の保存
+    // OOF予測の保存を最適化
     let oof_series = Series::new("OOF_Predictions".into(), oof_predictions);
-    let mut oof_df = DataFrame::new(vec![polars::prelude::Column::Series(oof_series)])?;
+    let mut oof_df = DataFrame::new(vec![polars::prelude::Column::Series(oof_series)])
+        .map_err(|e| anyhow::anyhow!("Failed to create OOF DataFrame: {}", e))?;
 
-    CsvWriter::new(std::fs::File::create(oof_predictions_path)?)
-        .finish(&mut oof_df)?;
+    let oof_file = std::fs::File::create(oof_predictions_path)
+        .map_err(|e| anyhow::anyhow!("Failed to create OOF predictions file {}: {}", oof_predictions_path, e))?;
+        
+    CsvWriter::new(oof_file)
+        .finish(&mut oof_df)
+        .map_err(|e| anyhow::anyhow!("Failed to write OOF predictions: {}", e))?;
 
-    println!("Training complete. Saving model to {}", output_model_path);
+    println!("\nTraining completed successfully!");
+    println!("Models saved with pattern: {}", output_model_path.replace(".bin", "_fold*.bin"));
+    println!("OOF predictions saved to: {}", oof_predictions_path);
 
-    Ok(())
+    Ok()
 }
 
